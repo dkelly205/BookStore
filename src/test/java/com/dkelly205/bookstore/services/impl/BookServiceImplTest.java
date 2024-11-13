@@ -3,6 +3,7 @@ package com.dkelly205.bookstore.services.impl;
 
 import com.dkelly205.bookstore.domain.Book;
 import com.dkelly205.bookstore.domain.BookEntity;
+import com.dkelly205.bookstore.mapper.BookMapper;
 import com.dkelly205.bookstore.repositories.BookRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,9 @@ public class BookServiceImplTest {
     @Mock
     private BookRepository bookRepository;
 
+    @Mock
+    private BookMapper bookMapper;
+
     @InjectMocks
     private BookServiceImpl underTest;
 
@@ -38,10 +42,14 @@ public class BookServiceImplTest {
         final Book book = testBook();
         final BookEntity bookEntity = testBookEntity();
 
+        when(bookMapper.bookToBookEntity(book)).thenReturn(bookEntity);
         when(bookRepository.save(eq(bookEntity))).thenReturn(bookEntity);
+        when(bookMapper.bookEntityToBook(eq(bookEntity))).thenReturn(book);
         final Book result = underTest.create(book);
 
+        verify(bookMapper).bookToBookEntity(eq(book));
         verify(bookRepository).save(eq(bookEntity));
+        verify(bookMapper).bookEntityToBook(eq(bookEntity));
         assertEquals(book, result);
     }
 
@@ -63,9 +71,11 @@ public class BookServiceImplTest {
         final BookEntity bookEntity = testBookEntity();
 
         when(bookRepository.findById(book.getIsbn())).thenReturn(Optional.of(bookEntity));
+        when(bookMapper.bookEntityToBook(eq(bookEntity))).thenReturn(book);
         final Optional<Book> result = underTest.findById(book.getIsbn());
 
         verify(bookRepository).findById(book.getIsbn());
+        verify(bookMapper).bookEntityToBook(eq(bookEntity));
         assertEquals(Optional.of(book), result);
     }
 
@@ -77,13 +87,19 @@ public class BookServiceImplTest {
 
     @Test
     public void testListBooksReturnsBooksWhenBooksExist(){
+        final Book book = testBook();
         final BookEntity bookEntity = testBookEntity();
 
         when(bookRepository.findAll()).thenReturn(List.of(bookEntity));
+        when(bookMapper.bookEntityToBook(eq(bookEntity))).thenReturn(book);
+
         final List<Book> result = underTest.listBooks();
 
         verify(bookRepository).findAll();
+        verify(bookMapper).bookEntityToBook(eq(bookEntity));
         assertEquals(1, result.size());
+        assertEquals(book, result.get(0));
+
     }
 
 }
