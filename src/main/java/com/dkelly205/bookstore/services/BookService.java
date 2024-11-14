@@ -1,8 +1,9 @@
 package com.dkelly205.bookstore.services;
 
 import com.dkelly205.bookstore.domain.Book;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface BookService {
@@ -11,5 +12,5 @@ public interface BookService {
 
     Optional<Book> findById(String isbn);
 
-    List<Book> listBooks();
+    Page<Book> findBooks(Pageable pageable);
 }

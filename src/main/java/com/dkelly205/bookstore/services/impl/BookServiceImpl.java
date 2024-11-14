@@ -6,6 +6,8 @@ import com.dkelly205.bookstore.mapper.BookMapper;
 import com.dkelly205.bookstore.repositories.BookRepository;
 import com.dkelly205.bookstore.services.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -43,9 +45,12 @@ public class  BookServiceImpl implements BookService {
     }
 
     @Override
-    public List<Book> listBooks() {
-        final List<BookEntity> bookEntityList = bookRepository.findAll();
-        return bookEntityList.stream().map(bookMapper::bookEntityToBook).toList();
+    public Page<Book> findBooks(Pageable pageable) {
+        Page<BookEntity> bookEntities =  bookRepository.findAll(pageable);
+
+        return bookEntities.map(bookMapper::bookEntityToBook);
+
+
     }
 
 
