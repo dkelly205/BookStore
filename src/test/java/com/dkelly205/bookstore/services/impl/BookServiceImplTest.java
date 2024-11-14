@@ -5,25 +5,26 @@ import com.dkelly205.bookstore.domain.Book;
 import com.dkelly205.bookstore.domain.BookEntity;
 import com.dkelly205.bookstore.mapper.BookMapper;
 import com.dkelly205.bookstore.repositories.BookRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import javax.swing.text.html.Option;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.dkelly205.bookstore.TestData.testBook;
-import static com.dkelly205.bookstore.TestData.testBookEntity;
+import static com.dkelly205.bookstore.TestData.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BookServiceImplTest {
@@ -80,26 +81,46 @@ public class BookServiceImplTest {
     }
 
     @Test
-    public void testListBooksReturnsEmptyListWhenNoBooksExist(){
-        final List<Book> result = underTest.listBooks();
-        assertEquals(0, result.size());
+    public void testListBooksReturnsEmptyFindWhenNoBooksExist(){
+        Pageable pageable = PageRequest.of(0, 3);
+        final Page<Book> result = underTest.findBooks(pageable);
+        assertEquals(0, result.getTotalElements());
     }
 
-    @Test
-    public void testListBooksReturnsBooksWhenBooksExist(){
-        final Book book = testBook();
-        final BookEntity bookEntity = testBookEntity();
+    @ParameterizedTest
+    @CsvSource({
+            "0, 2",
+            "1, 2",
+            "2, 2"
+    })
+    public void testFindBooksReturnsBooksWhenBooksExist(int page, int size) {
+        // Arrange
+        final List<Book> books = testBooks();
+        final List<BookEntity> bookEntities = testBookEntities();
 
-        when(bookRepository.findAll()).thenReturn(List.of(bookEntity));
-        when(bookMapper.bookEntityToBook(eq(bookEntity))).thenReturn(book);
+        Pageable pageable = PageRequest.of(page, size);
 
-        final List<Book> result = underTest.listBooks();
+        // Calculate the start and end indices for the requested page
+        int start = Math.min(page * size, bookEntities.size());
+        int end = Math.min((page + 1) * size, bookEntities.size());
 
-        verify(bookRepository).findAll();
-        verify(bookMapper).bookEntityToBook(eq(bookEntity));
-        assertEquals(1, result.size());
-        assertEquals(book, result.get(0));
+        // Create a sublist for the current page
+        List<BookEntity> pagedBookEntities = bookEntities.subList(start, end);
+        List<Book> expectedPagedBooks = books.subList(start, end);
 
+        Page<BookEntity> bookEntitiesPage = new PageImpl<>(pagedBookEntities, pageable, bookEntities.size());
+        when(bookRepository.findAll(pageable)).thenReturn(bookEntitiesPage);
+
+        for (int i = 0; i < pagedBookEntities.size(); i++) {
+            when(bookMapper.bookEntityToBook(eq(pagedBookEntities.get(i)))).thenReturn(expectedPagedBooks.get(i));
+        }
+
+        final Page<Book> result = underTest.findBooks(pageable);
+
+        verify(bookRepository).findAll(pageable);
+        verify(bookMapper, times(pagedBookEntities.size())).bookEntityToBook(any(BookEntity.class));
+        assertEquals(bookEntities.size(), result.getTotalElements());
+        assertEquals(expectedPagedBooks, result.getContent());
     }
 
 }
