@@ -19,8 +19,7 @@ import java.util.List;
 import static com.dkelly205.bookstore.TestData.testBook;
 import static com.dkelly205.bookstore.TestData.testBooks;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -119,6 +118,38 @@ public class BookControllerIT {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.pageable.pageSize").value(2))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(books.size()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.last").value(true));
+    }
+
+    @Test
+    public void testThatHttp200IsReturnedWhenBookIsDeleted() throws Exception {
+        final Book book = testBook();
+        bookService.create(book);
+        mockMvc.perform(delete("/books/" + book.getIsbn()))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    public void testThatHttp404IsReturnedWhenWeAttemptToUpdateBookThatDoesNotExist() throws Exception {
+        mockMvc.perform(put("/books/12345")
+                        .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"id\":12345, \"title\":\"Updated Title\", \"author\":\"Updated Author\"}"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    public void testThatHttp200IsReturnedWhenExistingBookIsUpdated() throws Exception {
+
+        final Book book = testBook();
+        bookService.create(book);
+        final ObjectMapper objectMapper = new ObjectMapper();
+
+        String newTitle = "Updated title";
+        book.setTitle(newTitle);
+        final String bookJson = objectMapper.writeValueAsString(book);
+        mockMvc.perform(put("/books/" + book.getIsbn())
+                        .contentType(MediaType.APPLICATION_JSON).content(bookJson))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
     }
 
 }

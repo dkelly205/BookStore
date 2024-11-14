@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.dkelly205.bookstore.TestData.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -121,6 +120,42 @@ public class BookServiceImplTest {
         verify(bookMapper, times(pagedBookEntities.size())).bookEntityToBook(any(BookEntity.class));
         assertEquals(bookEntities.size(), result.getTotalElements());
         assertEquals(expectedPagedBooks, result.getContent());
+    }
+
+    @Test
+    public void testDeleteBookDeletesBookById(){
+        final String id = "isbn";
+        underTest.deleteBookById(id);
+        verify(bookRepository).deleteById(id);
+
+    }
+
+    @Test
+    public void testUpdateBookReturnsNullIfBookDoesNotExist(){
+        final Book updatedBook = testBook();
+        when(bookRepository.findById(updatedBook.getIsbn())).thenReturn(Optional.empty());
+
+        assertNull(underTest.updateBook(updatedBook));
+        verify(bookRepository).findById(updatedBook.getIsbn());
+        verify(bookRepository, times(0)).save(any(BookEntity.class));
+    }
+
+    @Test
+    public void testUpdateBookUpdatesBook(){
+        final Book updatedBook = testBook();
+        updatedBook.setTitle("Updated title");
+        final BookEntity existingBookEntity = testBookEntity();
+        when(bookRepository.findById(updatedBook.getIsbn())).thenReturn(Optional.of(existingBookEntity));
+        when(bookMapper.bookEntityToBook(eq(existingBookEntity))).thenReturn(updatedBook);
+
+
+        Book result = underTest.updateBook(updatedBook);
+        verify(bookRepository).findById(updatedBook.getIsbn());
+        verify(bookRepository, times(1)).save(any(BookEntity.class));
+        verify(bookMapper).bookEntityToBook(eq(existingBookEntity));
+
+        assertEquals(updatedBook, result);
+
     }
 
 }

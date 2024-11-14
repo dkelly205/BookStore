@@ -45,6 +45,24 @@ public class BookController {
         final Page<Book> foundBooks = bookService.findBooks(pageable);
         return new ResponseEntity<>(foundBooks, HttpStatus.OK);
 
+    }
+
+    @DeleteMapping("/{isbn}")
+    public ResponseEntity deleteBook(@PathVariable final String isbn){
+        bookService.deleteBookById(isbn);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PutMapping("/{isbn}")
+    public ResponseEntity updateBook(@PathVariable final String isbn, @RequestBody Book updatedBook) {
+
+        updatedBook.setIsbn(isbn);
+        Book updated = bookService.updateBook(updatedBook);
+        if(updated == null){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
 
     }
 }

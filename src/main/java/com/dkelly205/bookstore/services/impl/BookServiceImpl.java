@@ -49,8 +49,24 @@ public class  BookServiceImpl implements BookService {
         Page<BookEntity> bookEntities =  bookRepository.findAll(pageable);
 
         return bookEntities.map(bookMapper::bookEntityToBook);
+    }
 
+    @Override
+    public void deleteBookById(String isbn) {
+        bookRepository.deleteById(isbn);
+    }
 
+    @Override
+    public Book updateBook(Book updatedBook) {
+        Optional<BookEntity> existingBookOptional = bookRepository.findById(updatedBook.getIsbn());
+        if(existingBookOptional.isEmpty()) {
+            return null;
+        }
+        BookEntity existingBook = existingBookOptional.get();
+        existingBook.setTitle(updatedBook.getTitle());
+        existingBook.setAuthor(updatedBook.getAuthor());
+        bookRepository.save(existingBook);
+        return bookMapper.bookEntityToBook(existingBook);
     }
 
 
